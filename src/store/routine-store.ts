@@ -1,121 +1,123 @@
-'use client';
-
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { format } from 'date-fns';
-import { RoutineItem, RoutinePeriod } from '@/types';
+import api from '@/lib/api-client';
+import { RoutineItem } from '@/types';
 
 interface RoutineState {
-    items: Record<RoutinePeriod, RoutineItem[]>;
-    completions: Record<string, string[]>; // "YYYY-MM-DD" → completed item IDs
-    addItem: (period: RoutinePeriod, name: string, timeEstimate: number | null) => void;
-    updateItem: (period: RoutinePeriod, id: string, name: string, timeEstimate: number | null) => void;
-    deleteItem: (period: RoutinePeriod, id: string) => void;
-    toggleComplete: (itemId: string, date: Date) => void;
-    isCompleted: (itemId: string, date: Date) => boolean;
-    getTodayProgress: () => { done: number; total: number };
-    moveItem: (period: RoutinePeriod, fromIndex: number, toIndex: number) => void;
+    items: RoutineItem[];
+    isLoading: boolean;
+    error: string | null;
+    fetchRoutines: () => Promise<void>;
+    addItem: (item: Omit<RoutineItem, 'id' | 'createdAt' | 'updatedAt' | 'completions' | 'userId' | 'sortOrder'>) => Promise<void>;
+    toggleCompletion: (id: string, date: string) => Promise<void>;
+    updateItem: (id: string, updates: Partial<RoutineItem>) => Promise<void>;
+    deleteItem: (id: string) => Promise<void>;
+    reorderItems: (period: 'morning' | 'afternoon' | 'evening', items: RoutineItem[]) => Promise<void>;
 }
 
-export const useRoutineStore = create<RoutineState>()(
-    persist(
-        (set, get) => ({
-            items: {
-                morning: [],
-                afternoon: [],
-                evening: [],
-            },
-            completions: {},
+export const useRoutineStore = create<RoutineState>((set, get) => ({
+    items: [],
+    isLoading: false,
+    error: null,
 
-            addItem: (period, name, timeEstimate) => {
-                const newItem: RoutineItem = {
-                    id: crypto.randomUUID(),
-                    name,
-                    timeEstimate,
-                    order: get().items[period].length,
-                };
-                set((state) => ({
-                    items: {
-                        ...state.items,
-                        [period]: [...state.items[period], newItem],
-                    },
-                }));
-            },
-
-            updateItem: (period, id, name, timeEstimate) => {
-                set((state) => ({
-                    items: {
-                        ...state.items,
-                        [period]: state.items[period].map((item) =>
-                            item.id === id ? { ...item, name, timeEstimate } : item
-                        ),
-                    },
-                }));
-            },
-
-            deleteItem: (period, id) => {
-                set((state) => ({
-                    items: {
-                        ...state.items,
-                        [period]: state.items[period].filter((item) => item.id !== id),
-                    },
-                }));
-            },
-
-            toggleComplete: (itemId, date) => {
-                const dateKey = format(date, 'yyyy-MM-dd');
-                set((state) => {
-                    const dayCompletions = state.completions[dateKey] || [];
-                    const isCurrentlyComplete = dayCompletions.includes(itemId);
-                    return {
-                        completions: {
-                            ...state.completions,
-                            [dateKey]: isCurrentlyComplete
-                                ? dayCompletions.filter((id) => id !== itemId)
-                                : [...dayCompletions, itemId],
-                        },
-                    };
-                });
-            },
-
-            isCompleted: (itemId, date) => {
-                const dateKey = format(date, 'yyyy-MM-dd');
-                const dayCompletions = get().completions[dateKey] || [];
-                return dayCompletions.includes(itemId);
-            },
-
-            getTodayProgress: () => {
-                const { items, completions } = get();
-                const today = format(new Date(), 'yyyy-MM-dd');
-                const allItems = [
-                    ...items.morning,
-                    ...items.afternoon,
-                    ...items.evening,
-                ];
-                const total = allItems.length;
-                const todayCompletions = completions[today] || [];
-                const done = allItems.filter((item) =>
-                    todayCompletions.includes(item.id)
-                ).length;
-                return { done, total };
-            },
-
-            moveItem: (period, fromIndex, toIndex) => {
-                set((state) => {
-                    const newItems = [...state.items[period]];
-                    const [removed] = newItems.splice(fromIndex, 1);
-                    newItems.splice(toIndex, 0, removed);
-                    return {
-                        items: {
-                            ...state.items,
-                            [period]: newItems.map((item, i) => ({ ...item, order: i })),
-                        },
-                    };
-                });
-            },
-        }),
-        {
-            name: 'routine-store',
+    fetchRoutines: async () => {
+        set({ isLoading: true, error: null });
+        try {
+            const data = await api.get<{ routines: RoutineItem[] }>('/routines');
+            set({ items: data.routines, isLoading: false });
+        } catch (error: any) {
+            set({ error: error.message || 'Failed to fetch routines', isLoading: false });
         }
-    )
-);
+    },
+
+    addItem: async (item) => {
+        try {
+            const data = await api.post<{ routine: RoutineItem }>('/routines', item);
+            set((state) => ({ items: [...state.items, data.routine] }));
+        } catch (error: any) {
+            set({ error: error.message || 'Failed to add routine item' });
+        }
+    },
+
+    toggleCompletion: async (id, date) => {
+        // Optimistic update
+        const previousItems = get().items;
+        set((state) => ({
+            items: state.items.map((item) => {
+                if (item.id === id) {
+                    const completions = { ...item.completions };
+                    if (completions[date]) {
+                        delete completions[date];
+                    } else {
+                        completions[date] = true;
+                    }
+                    return { ...item, completions };
+                }
+                return item;
+            }),
+        }));
+
+        try {
+            await api.patch(`/routines/${id}/toggle`, { date });
+        } catch (error: any) {
+            // Revert on error
+            set({ items: previousItems, error: error.message || 'Failed to toggle routine date' });
+        }
+    },
+
+    updateItem: async (id, updates) => {
+        // Optimistic update
+        const previousItems = get().items;
+        set((state) => ({
+            items: state.items.map((item) => (item.id === id ? { ...item, ...updates } : item)),
+        }));
+
+        try {
+            await api.put(`/routines/${id}`, updates);
+        } catch (error: any) {
+            // Revert on error
+            set({ items: previousItems, error: error.message || 'Failed to update routine item' });
+        }
+    },
+
+    deleteItem: async (id) => {
+        // Optimistic update
+        const previousItems = get().items;
+        set((state) => ({
+            items: state.items.filter((item) => item.id !== id),
+        }));
+
+        try {
+            await api.delete(`/routines/${id}`);
+        } catch (error: any) {
+            // Revert on error
+            set({ items: previousItems, error: error.message || 'Failed to delete routine item' });
+        }
+    },
+
+    reorderItems: async (period, items) => {
+        // Optimistic update
+        const previousItems = get().items;
+
+        // Replace items for this period with new items
+        set((state) => {
+            const otherItems = state.items.filter(item => item.period !== period);
+            // Ensure new items have updated sortOrder properties locally
+            const updatedPeriodItems = items.map((item, index) => ({ ...item, sortOrder: index }));
+            return { items: [...otherItems, ...updatedPeriodItems] };
+        });
+
+        try {
+            const itemIds = items.map(item => item.id);
+            const data = await api.patch<{ routines: RoutineItem[] }>('/routines/reorder', { period, itemIds });
+
+            // Final sync with backend returned data for this period
+            set((state) => {
+                const otherItems = state.items.filter(item => item.period !== period);
+                return { items: [...otherItems, ...data.routines] };
+            });
+        } catch (error: any) {
+            // Revert on error
+            set({ items: previousItems, error: error.message || 'Failed to reorder routines' });
+        }
+    },
+}));

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { useReactToPrint } from 'react-to-print';
 import { Header } from '@/components/dashboard/header';
 import { TodaySummary } from '@/components/dashboard/today-summary';
@@ -9,15 +9,43 @@ import { HabitList } from '@/components/habits/habit-list';
 import { HabitGrid } from '@/components/habits/habit-grid';
 import { RoutineBlock } from '@/components/routines/routine-block';
 import { PrintView } from '@/components/export/print-view';
+import { useHabitStore } from '@/store/habit-store';
+import { useRoutineStore } from '@/store/routine-store';
+import { useSession } from 'next-auth/react';
+import { Loader2 } from 'lucide-react';
 
 export default function Home() {
   const printRef = useRef<HTMLDivElement>(null);
+  const { status } = useSession();
+
+  const fetchHabits = useHabitStore((s) => s.fetchHabits);
+  const fetchRoutines = useRoutineStore((s) => s.fetchRoutines);
+
+  const isHabitsLoading = useHabitStore((s) => s.isLoading);
+  const isRoutinesLoading = useRoutineStore((s) => s.isLoading);
+
+  useEffect(() => {
+    if (status === 'authenticated') {
+      fetchHabits();
+      fetchRoutines();
+    }
+  }, [status, fetchHabits, fetchRoutines]);
 
   const handlePrint = useReactToPrint({
     contentRef: printRef,
     documentTitle: 'Habit Tracker & Routine Planner',
   });
 
+  if (status === 'loading' || isHabitsLoading || isRoutinesLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background text-muted-foreground">
+        <Loader2 className="h-8 w-8 animate-spin mb-4 text-primary" />
+        <p>Loading your dashboard...</p>
+      </div>
+    );
+  }
+
+  // Next.js middleware handles unauthenticated redirects so we safely render dashboard here
   return (
     <>
       <div className="min-h-screen bg-background print:hidden">

@@ -86,7 +86,7 @@ export const PrintView = forwardRef<HTMLDivElement>((_, ref) => {
                 </h2>
                 {(['morning', 'afternoon', 'evening'] as RoutinePeriod[]).map(
                     (period) => {
-                        const items = routineItems[period];
+                        const items = routineItems.filter(item => item.period === period).sort((a, b) => a.sortOrder - b.sortOrder);
                         if (items.length === 0) return null;
 
                         return (

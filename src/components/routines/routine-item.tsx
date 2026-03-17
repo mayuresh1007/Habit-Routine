@@ -7,21 +7,18 @@ import { Trash2, Pencil, Clock, GripVertical } from 'lucide-react';
 import { RoutineItem as RoutineItemType } from '@/types';
 import { useRoutineStore } from '@/store/routine-store';
 import { RoutineForm } from './routine-form';
-import { RoutinePeriod } from '@/types';
 import { format } from 'date-fns';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
 interface RoutineItemProps {
     item: RoutineItemType;
-    period: RoutinePeriod;
 }
 
-export function RoutineItem({ item, period }: RoutineItemProps) {
-    const toggleComplete = useRoutineStore((s) => s.toggleComplete);
+export function RoutineItem({ item }: RoutineItemProps) {
+    const toggleCompletion = useRoutineStore((s) => s.toggleCompletion);
     const deleteItem = useRoutineStore((s) => s.deleteItem);
     const updateItem = useRoutineStore((s) => s.updateItem);
-    const completions = useRoutineStore((s) => s.completions);
 
     const {
         attributes,
@@ -41,10 +38,11 @@ export function RoutineItem({ item, period }: RoutineItemProps) {
 
     const today = new Date();
     const todayKey = format(today, 'yyyy-MM-dd');
+
+    // Check if the item is completed for today directly from the flat map
     const completed = useMemo(() => {
-        const dayCompletions = completions[todayKey] || [];
-        return dayCompletions.includes(item.id);
-    }, [completions, todayKey, item.id]);
+        return !!item.completions[todayKey];
+    }, [item.completions, todayKey]);
 
     return (
         <div
@@ -63,7 +61,7 @@ export function RoutineItem({ item, period }: RoutineItemProps) {
 
             <Checkbox
                 checked={completed}
-                onCheckedChange={() => toggleComplete(item.id, today)}
+                onCheckedChange={() => toggleCompletion(item.id, todayKey)}
                 className="h-4 w-4"
             />
 
@@ -81,7 +79,7 @@ export function RoutineItem({ item, period }: RoutineItemProps) {
                 <RoutineForm
                     initialName={item.name}
                     initialTime={item.timeEstimate}
-                    onSubmit={(name, time) => updateItem(period, item.id, name, time)}
+                    onSubmit={(name, time) => updateItem(item.id, { name, timeEstimate: time })}
                     trigger={
                         <Button variant="ghost" size="icon" className="h-6 w-6">
                             <Pencil className="h-3 w-3" />
@@ -93,7 +91,7 @@ export function RoutineItem({ item, period }: RoutineItemProps) {
                     variant="ghost"
                     size="icon"
                     className="h-6 w-6 text-destructive"
-                    onClick={() => deleteItem(period, item.id)}
+                    onClick={() => deleteItem(item.id)}
                 >
                     <Trash2 className="h-3 w-3" />
                 </Button>

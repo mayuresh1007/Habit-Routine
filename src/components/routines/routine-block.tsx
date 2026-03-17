@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useRoutineStore } from '@/store/routine-store';
@@ -48,7 +48,7 @@ const PERIOD_CONFIG: Record<
 export function RoutineBlock() {
     const items = useRoutineStore((s) => s.items);
     const addItem = useRoutineStore((s) => s.addItem);
-    const moveItem = useRoutineStore((s) => s.moveItem);
+    const reorderItems = useRoutineStore((s) => s.reorderItems);
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -57,19 +57,29 @@ export function RoutineBlock() {
 
     const periods: RoutinePeriod[] = ['morning', 'afternoon', 'evening'];
 
+    const getPeriodItems = useCallback((period: RoutinePeriod) => {
+        return items
+            .filter((item) => item.period === period)
+            .sort((a, b) => a.sortOrder - b.sortOrder);
+    }, [items]);
+
     const handleDragEnd = useCallback(
         (period: RoutinePeriod) => (event: DragEndEvent) => {
             const { active, over } = event;
             if (!over || active.id === over.id) return;
 
-            const periodItems = items[period];
+            const periodItems = getPeriodItems(period);
             const oldIndex = periodItems.findIndex((item) => item.id === active.id);
             const newIndex = periodItems.findIndex((item) => item.id === over.id);
+
             if (oldIndex !== -1 && newIndex !== -1) {
-                moveItem(period, oldIndex, newIndex);
+                const newItems = Array.from(periodItems);
+                const [movedItem] = newItems.splice(oldIndex, 1);
+                newItems.splice(newIndex, 0, movedItem);
+                reorderItems(period, newItems);
             }
         },
-        [items, moveItem]
+        [getPeriodItems, reorderItems]
     );
 
     return (
@@ -84,7 +94,7 @@ export function RoutineBlock() {
                 <div className="space-y-4">
                     {periods.map((period, index) => {
                         const config = PERIOD_CONFIG[period];
-                        const periodItems = items[period];
+                        const periodItems = getPeriodItems(period);
 
                         return (
                             <div key={period}>
@@ -95,7 +105,7 @@ export function RoutineBlock() {
                                         <h3 className="text-sm font-semibold">{config.label}</h3>
                                     </div>
                                     <RoutineForm
-                                        onSubmit={(name, time) => addItem(period, name, time)}
+                                        onSubmit={(name, time) => addItem({ period, name, timeEstimate: time })}
                                     />
                                 </div>
 
@@ -119,7 +129,6 @@ export function RoutineBlock() {
                                                     <RoutineItem
                                                         key={item.id}
                                                         item={item}
-                                                        period={period}
                                                     />
                                                 ))}
                                             </div>

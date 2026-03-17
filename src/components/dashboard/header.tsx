@@ -3,6 +3,7 @@
 import { format } from 'date-fns';
 import { Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { UserMenu } from '@/components/auth/user-menu';
 
 interface HeaderProps {
     onExport: () => void;
@@ -21,16 +22,19 @@ export function Header({ onExport }: HeaderProps) {
                     {format(today, 'EEEE, MMMM d, yyyy')}
                 </p>
             </div>
-            <Button
-                variant="outline"
-                size="sm"
-                onClick={onExport}
-                className="gap-2"
-                id="export-button"
-            >
-                <Printer className="h-4 w-4" />
-                <span className="hidden sm:inline">Export / Print</span>
-            </Button>
+            <div className="flex items-center gap-4">
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onExport}
+                    className="gap-2"
+                    id="export-button"
+                >
+                    <Printer className="h-4 w-4" />
+                    <span className="hidden sm:inline">Export / Print</span>
+                </Button>
+                <UserMenu />
+            </div>
         </header>
     );
 }

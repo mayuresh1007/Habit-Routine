@@ -13,7 +13,6 @@ export function TodaySummary() {
     const hydrated = useHydration();
     const habits = useHabitStore((s) => s.habits);
     const routineItems = useRoutineStore((s) => s.items);
-    const completions = useRoutineStore((s) => s.completions);
 
     const { habitProgress, routineProgress, percentage } = useMemo(() => {
         if (!hydrated) return { habitProgress: { done: 0, total: 0 }, routineProgress: { done: 0, total: 0 }, percentage: 0 };
@@ -22,10 +21,8 @@ export function TodaySummary() {
         const habitTotal = habits.length;
         const habitDone = habits.filter((h) => h.completions[today]).length;
 
-        const allRoutineItems = [...routineItems.morning, ...routineItems.afternoon, ...routineItems.evening];
-        const routineTotal = allRoutineItems.length;
-        const todayCompletions = completions[today] || [];
-        const routineDone = allRoutineItems.filter((item) => todayCompletions.includes(item.id)).length;
+        const routineTotal = routineItems.length;
+        const routineDone = routineItems.filter((item) => item.completions && item.completions[today]).length;
 
         const totalDone = habitDone + routineDone;
         const totalItems = habitTotal + routineTotal;
@@ -36,7 +33,7 @@ export function TodaySummary() {
             routineProgress: { done: routineDone, total: routineTotal },
             percentage: pct,
         };
-    }, [hydrated, habits, routineItems, completions]);
+    }, [hydrated, habits, routineItems]);
 
     if (!hydrated) {
         return (

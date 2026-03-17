@@ -32,7 +32,7 @@ function calculateStreak(completions: Record<string, boolean>): number {
 }
 
 export function HabitItem({ habit }: HabitItemProps) {
-    const toggleDay = useHabitStore((s) => s.toggleDay);
+    const toggleCompletion = useHabitStore((s) => s.toggleCompletion);
     const deleteHabit = useHabitStore((s) => s.deleteHabit);
     const updateHabit = useHabitStore((s) => s.updateHabit);
 
@@ -105,7 +105,7 @@ export function HabitItem({ habit }: HabitItemProps) {
                             </span>
                             <Checkbox
                                 checked={!!isCompleted}
-                                onCheckedChange={() => toggleDay(habit.id, date)}
+                                onCheckedChange={() => toggleCompletion(habit.id, dateKey)}
                                 className={`h-5 w-5 rounded ${isToday ? 'border-primary' : ''}`}
                             />
                         </div>
@@ -119,7 +119,7 @@ export function HabitItem({ habit }: HabitItemProps) {
                     initialEmoji={habit.emoji}
                     initialFrequency={habit.frequency}
                     onSubmit={(name, emoji, frequency) =>
-                        updateHabit(habit.id, name, emoji, frequency)
+                        updateHabit(habit.id, { name, emoji, frequency })
                     }
                     trigger={
                         <Button variant="ghost" size="icon" className="h-7 w-7">
