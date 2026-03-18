@@ -62,7 +62,7 @@ export function TodaySummary() {
                         <Target className="h-5 w-5 text-brand-color" />
                     </div>
                     <div>
-                        <p className="text-sm font-medium">Today&apos;s Progress</p>
+                        <p className="text-sm font-medium">Today&apos;s Progress <span className="text-xs text-muted-foreground">-{format(new Date(), 'MMM dd, yyyy')}</span></p>
                         <p className="text-2xl font-bold">{percentage}%</p>
                     </div>
                 </div>

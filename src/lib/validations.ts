@@ -41,6 +41,10 @@ export const createHabitSchema = z.object({
 
 export const updateHabitSchema = createHabitSchema;
 
+export const reorderHabitsSchema = z.object({
+    habitIds: z.array(z.string()).min(1, 'At least one habit ID is required'),
+});
+
 export const toggleDateSchema = z.object({
     date: z
         .string()
@@ -83,6 +87,7 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type CreateHabitInput = z.infer<typeof createHabitSchema>;
 export type UpdateHabitInput = z.infer<typeof updateHabitSchema>;
+export type ReorderHabitsInput = z.infer<typeof reorderHabitsSchema>;
 export type ToggleDateInput = z.infer<typeof toggleDateSchema>;
 export type CreateRoutineInput = z.infer<typeof createRoutineSchema>;
 export type UpdateRoutineInput = z.infer<typeof updateRoutineSchema>;

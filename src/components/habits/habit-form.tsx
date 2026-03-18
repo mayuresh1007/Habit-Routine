@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { Plus } from 'lucide-react';
 
-const EMOJI_OPTIONS = ['💪', '📚', '🧘', '🏃', '💧', '🍎', '😴', '✍️', '🎯', '💊', '🧹', '🎵'];
+const EMOJI_OPTIONS = ['💪', '📚', '🧘', '🏃', '💧', '🍎', '😴', '✍️', '🎯', '💊', '🧹', '🎵', '🔍', '💰', '📸'];
 
 interface HabitFormProps {
     initialName?: string;

@@ -94,8 +94,18 @@ export const useHabitStore = create<HabitState>((set, get) => ({
         }
     },
 
-    reorderHabits: (habits) => {
-        // Frontend-only reorder for now until backend supports habit reordering
+    reorderHabits: async (habits) => {
+        // Optimistic update
+        const previousHabits = get().habits;
         set({ habits });
+
+        try {
+            await api.patch('/habits/reorder', {
+                habitIds: habits.map((h) => h.id),
+            });
+        } catch (error: any) {
+            // Revert on error
+            set({ habits: previousHabits, error: error.message || 'Failed to reorder habits' });
+        }
     },
 }));

@@ -6,6 +6,7 @@ export interface IHabit extends Document {
     name: string;
     emoji: string;
     frequency: 'daily' | 'weekly';
+    sortOrder: number;
     completions: Map<string, boolean>;
     createdAt: Date;
     updatedAt: Date;
@@ -37,6 +38,10 @@ const habitSchema = new Schema<IHabit>(
             },
             required: [true, 'Frequency is required'],
             default: 'daily',
+        },
+        sortOrder: {
+            type: Number,
+            default: 0,
         },
         completions: {
             type: Map,

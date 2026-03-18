@@ -10,6 +10,17 @@ import { RoutineForm } from './routine-form';
 import { format } from 'date-fns';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface RoutineItemProps {
     item: RoutineItemType;
@@ -87,14 +98,36 @@ export function RoutineItem({ item }: RoutineItemProps) {
                     }
                     title="Edit Task"
                 />
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 text-destructive"
-                    onClick={() => deleteItem(item.id)}
-                >
-                    <Trash2 className="h-3 w-3" />
-                </Button>
+                <AlertDialog>
+                    <AlertDialogTrigger 
+                        render={
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-destructive"
+                            />
+                        }
+                    >
+                        <Trash2 className="h-3 w-3" />
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Task</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Are you sure you want to delete this task? This action cannot be undone.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction 
+                                onClick={() => deleteItem(item.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                                Delete
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
         </div>
     );

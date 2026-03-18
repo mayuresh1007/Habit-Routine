@@ -10,6 +10,17 @@ import { useHabitStore } from '@/store/habit-store';
 import { HabitForm } from './habit-form';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 interface HabitItemProps {
     habit: Habit;
@@ -128,14 +139,39 @@ export function HabitItem({ habit }: HabitItemProps) {
                     }
                     title="Edit Habit"
                 />
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-destructive"
-                    onClick={() => deleteHabit(habit.id)}
-                >
-                    <Trash2 className="h-3 w-3" />
-                </Button>
+                <AlertDialog>
+                    <AlertDialogTrigger
+                        render={
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-destructive"
+                            />
+                        }
+                    >
+                        <Trash2 className="h-3 w-3" />
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle className="flex items-center gap-2">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                                <span className='text-destructive'>Delete Habit</span>
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Are you sure you want to delete this habit? This action cannot be undone and will remove all completion history.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                                onClick={() => deleteHabit(habit.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                                Delete
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </div>
         </div>
     );

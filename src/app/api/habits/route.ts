@@ -18,6 +18,7 @@ export async function GET() {
         await dbConnect();
 
         const habits = await Habit.find({ userId: session.user.id }).sort({
+            sortOrder: 1,
             createdAt: -1,
         });
 
@@ -58,8 +59,16 @@ export async function POST(req: NextRequest) {
 
         await dbConnect();
 
+        // Auto-calculate sort order: place at the end of the list
+        const lastItem = await Habit.findOne({
+            userId: session.user.id,
+        }).sort({ sortOrder: -1 });
+
+        const sortOrder = lastItem ? lastItem.sortOrder + 1 : 0;
+
         const habit = await Habit.create({
             userId: session.user.id,
+            sortOrder,
             ...result.data,
         });
 

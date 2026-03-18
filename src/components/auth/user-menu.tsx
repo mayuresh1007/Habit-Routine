@@ -26,7 +26,7 @@ export function UserMenu() {
                     <div className="h-8 w-8 rounded-full bg-brand/20 flex items-center justify-center text-brand font-bold">
                         {initial}
                     </div>
-                    <svg
+                    {/* <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="16"
                         height="16"
@@ -39,7 +39,7 @@ export function UserMenu() {
                         className="text-text-muted mr-1 h-4 w-4"
                     >
                         <path d="m6 9 6 6 6-6" />
-                    </svg>
+                    </svg> */}
                 </div>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-64 rounded-xl shadow-lg border-border/40 p-2">
