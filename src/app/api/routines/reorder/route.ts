@@ -4,7 +4,8 @@ import dbConnect from '@/lib/db';
 import RoutineItem from '@/models/RoutineItem';
 import { reorderRoutineSchema } from '@/lib/validations';
 
-// PATCH /api/routines/reorder — Reorder routine items within a period
+import mongoose from 'mongoose';
+
 export async function PATCH(req: NextRequest) {
     try {
         const session = await auth();
@@ -54,7 +55,10 @@ export async function PATCH(req: NextRequest) {
         // Update sort orders in bulk based on the new order
         const bulkOps = itemIds.map((id, index) => ({
             updateOne: {
-                filter: { _id: id, userId: session.user!.id },
+                filter: { 
+                    _id: new mongoose.Types.ObjectId(id), 
+                    userId: new mongoose.Types.ObjectId(session.user!.id) 
+                },
                 update: { $set: { sortOrder: index } },
             },
         }));

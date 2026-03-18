@@ -4,6 +4,8 @@ import dbConnect from '@/lib/db';
 import Habit from '@/models/Habit';
 import { reorderHabitsSchema } from '@/lib/validations';
 
+import mongoose from 'mongoose';
+
 export async function PATCH(req: NextRequest) {
     try {
         const session = await auth();
@@ -33,9 +35,13 @@ export async function PATCH(req: NextRequest) {
         const { habitIds } = result.data;
 
         // Perform bulk write to update sortOrder
+        // Explicitly cast to ObjectId because bulkWrite might bypass Mongoose schema casting
         const bulkOps = habitIds.map((id, index) => ({
             updateOne: {
-                filter: { _id: id, userId: session.user!.id },
+                filter: { 
+                    _id: new mongoose.Types.ObjectId(id), 
+                    userId: new mongoose.Types.ObjectId(session.user!.id) 
+                },
                 update: { $set: { sortOrder: index } },
             },
         }));
