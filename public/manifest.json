@@ -1,0 +1,23 @@
+{
+  "name": "TinyWin: Habit & Routine Planner",
+  "short_name": "TinyWin",
+  "description": "Build habits that stick and win your day. A powerful, minimalist habit tracker and dynamic daily routine planner designed for ultimate productivity.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#10b981",
+  "icons": [
+    {
+      "src": "/logoverticle.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logoverticle.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

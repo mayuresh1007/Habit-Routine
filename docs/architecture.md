@@ -4,25 +4,25 @@ This document outlines the architectural patterns and structure of the Habit Tra
 
 ## System Architecture
 
-The application is built as a **Single Page Application (SPA)** using **Next.js 15 (App Router)**. It follows a modular component-based architecture for the UI and a centralized store pattern for state management.
+The application is built as a **Full-Stack Next.js 15 (App Router)** application. It utilizes server-side API routes, **NextAuth** for secure session management, and a **MongoDB** database via **Mongoose** models. The frontend maintains a snappy user experience via Zustand stores equipped with optimistic UI updates.
 
 ### Component Tree
-- `RootLayout` (Layout & Providers)
-  - `DashboardPage` (Main orchestrator)
-    - `Header` (Title & Export controls)
+- `RootLayout` (NextAuth Session Provider, Custom Theme Providers)
+  - `DashboardPage` (Main orchestrator, fetches initials on mount)
+    - `Header` (Title, Profile Menu, Export & Theme controls)
     - `SummarySection` (Stats & Streaks cards)
     - `MainGrid` (Responsive layout)
-      - `HabitSection` (Habit list & Grid)
+      - `HabitSection` (Habit list & Grid connected to MongoDB DB)
       - `RoutineSection` (Morning/Afternoon/Evening blocks)
     - `PrintView` (Hidden, print-only layer)
 
 ## Data Flow
 
-1. **User Interaction**: User clicks a checkbox or adds an item.
-2. **Action Dispatch**: Components call actions on Zustand stores (`useHabitStore` or `useRoutineStore`).
-3. **State Mutation**: Store updates its internal state and triggers a background save to `localStorage`.
-4. **Re-render**: React detects state changes in the items/completions and re-renders the affected components.
-5. **Persistence**: On page reload, Zustands's `persist` middleware automatically re-hydrates the state from `localStorage`.
+1. **User Interaction**: User performs an action (e.g., ticking a checkbox, dragging a habit to reorder).
+2. **Optimistic UI Update**: The component dispatches an action to the Zustand store (`useHabitStore` or `useRoutineStore`), which immediately updates the UI state.
+3. **Backend Synchronization**: The store fires an asynchronous request to the appropriate Next.js API route (`/api/habits`, `/api/routines`, etc.).
+4. **Database Mutation**: The API route verifies the NextAuth session, validates the payload using Zod, and performs the necessary Mongoose operations (e.g., `bulkWrite` for reordering `sortOrder`, `updateOne` for completions).
+5. **Error Reconciliation**: If the API call fails, the store catches the error and reverts the optimistic update, restoring the frontend to the actual backend state.
 
 ## Folder Structure
 
@@ -40,6 +40,6 @@ src/
 └── types/             # TypeScript interfaces and types
 ```
 
-## Hydration Strategy
+## Authentication Strategy
 
-To prevent SSR (Server-Side Rendering) mismatches between server-rendered HTML and client-side `localStorage` data, the app uses a `useHydration` hook. Components that rely on persistent state wait for hydration before rendering data-dependent UI elements.
+Security is handled natively via NextAuth.js configured with JWT session strategies. API routes strictly enforce session validation, ensuring users can only read, mutate, and reorder `Habit` and `RoutineItem` documents belonging to their unique MongoDB `userId`.

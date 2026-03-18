@@ -13,7 +13,7 @@ This document provides a detailed breakdown of the key components in the Habit T
   - Drag handle (Grip icon)
   - 💧 Emoji and name
   - Rolling 7-day checkbox view
-  - Actions: Edit (opening `HabitForm`) and Delete.
+  - Actions: Edit (opening `HabitForm`) and Delete (via `AlertDialog` confirmation).
 - **`HabitForm.tsx`**: A dialog-based form for creating or editing habits. Uses **Base UI Dialog** for the modal.
 - **`HabitGrid.tsx`**: A monthly table view showing completions for every day of the current month.
 
@@ -23,7 +23,7 @@ This document provides a detailed breakdown of the key components in the Habit T
   - Drag handle
   - Checkbox for completion
   - Task name and optional time estimate icon (Clock)
-  - Actions: Edit and Delete.
+  - Actions: Edit (opening `RoutineForm`) and Delete (via `AlertDialog` confirmation).
 - **`RoutineForm.tsx`**: A dialog-based form for routine tasks with a "Time Estimate" input field.
 
 ## Export Components (`src/components/export/`)

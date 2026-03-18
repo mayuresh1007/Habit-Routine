@@ -26,25 +26,19 @@ The application uses two primary Zustand stores, both located in `src/store/`.
 
 ## Persistence Strategy
 
-Both stores use the `persist` middleware with the default `localStorage` storage. This ensures:
-1. **Auto-save**: Every state mutation is automatically serialized and saved to browser storage.
-2. **Rehydration**: On application load, the stores automatically read and restore their state from `localStorage`.
+The application has migrated away from `localStorage` in favor of a robust MongoDB backend via Next.js API Routes.
 
-### Hydration Guard
-To avoid **Hydration Mismatch Errors** (where the server-rendered HTML doesn't match the client-side `localStorage` data), we use a custom `useHydration` hook. 
-
-**Example Usage:**
-```tsx
-const hydrated = useHydration();
-if (!hydrated) return <LoadingPlaceholder />;
-return <DataComponent />;
-```
+1. **Initial Runtime**: Upon loading the dashboard, `fetchHabits` and `fetchRoutines` execute authenticated `GET` requests, populating the stores directly from MongoDB.
+2. **Optimistic Execution**: When a user marks a habit complete, `set()` is immediately invoked to update the frontend, mimicking zero latency.
+3. **Silent Background Sync**: A corresponding `api.patch()` or `api.post()` command is fired into the void. If it fails, the store catches the error and instantly rolls the state back.
 
 ## Drag-and-Drop Reordering Logic
 
-Reordering is handled by the `@dnd-kit/sortable` library. When a drag operation ends:
+Reordering is handled by the `@dnd-kit/sortable` library integrated directly with Mongoose's `bulkWrite`:
 1. The component catches the `onDragEnd` event.
-2. It calculates the `oldIndex` and `newIndex` of the dragged item.
-3. It calls `moveHabit` or `moveItem` in the store.
-4. The store uses `.splice()` to reorder the array immutably.
-5. The UI re-renders with the new order, which is then persisted to `localStorage`.
+2. It identifies the `oldIndex` and `newIndex` of the dragged item and repositions it in the local array.
+3. It invokes `reorderHabits` or `reorderRoutines` in the store.
+4. The store performs an optimistic UI update.
+5. A `PATCH` request (`/api/habits/reorder` or `/api/routines/reorder`) broadcasts the new array arrangement to the server.
+6. The Next.js API validates the payload using **Zod**, then securely executes a mapped MongoDB `bulkWrite` containing `updateOne` operations. Each document's `sortOrder` index is updated.
+7. The exact visual arrangement is permanently stored and seamlessly restored on the next login.
