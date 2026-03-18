@@ -28,8 +28,19 @@ export const PrintView = forwardRef<HTMLDivElement>((_, ref) => {
             style={{ fontFamily: 'system-ui, sans-serif' }}
         >
             <div className="text-center mb-8">
-                <h1 className="text-2xl font-bold">Habit Tracker & Routine Planner</h1>
+                <h1
+                    className="text-2xl font-bold"
+                    style={{ color: 'var(--brand-color)' }}
+                >
+                    Habit Tracker & Routine Planner
+                </h1>
                 <p className="text-gray-500 mt-1">{format(today, 'MMMM yyyy')}</p>
+                <h3
+                    className="mt-1 font-medium"
+                    style={{ color: 'var(--brand-streak)' }}
+                >
+                    The world’s judgment is constant, but growth begins with your own.
+                </h3>
             </div>
 
             {/* Habit Grid */}

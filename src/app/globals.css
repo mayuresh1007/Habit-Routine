@@ -52,6 +52,7 @@
   --color-brand-success: var(--brand-success);
   --color-brand-streak: var(--brand-streak);
   --color-brand-danger: var(--brand-danger);
+  --color-brand: var(--brand-color);
 }
 
 :root {
@@ -94,6 +95,7 @@
   --brand-success: #10B981;
   --brand-streak: #F59E0B;
   --brand-color: oklch(70.4% 0.14 182.503);
+  --bg-gradient: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
 }
 
 .dark {
@@ -136,6 +138,7 @@
   --brand-streak: #F59E0B;
   --brand-danger: #EF4444;
   --brand-color: oklch(70.4% 0.14 182.503);
+  --bg-gradient: linear-gradient(to right, #02273c);
 }
 
 @layer base {
@@ -144,7 +147,7 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply min-h-screen bg-background text-foreground;
   }
 
   html {
@@ -155,7 +158,6 @@
 @media print {
   body {
     background: white !important;
-    color: black !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }

@@ -40,8 +40,8 @@ export function TodaySummary() {
             <Card className="border-border/50">
                 <CardContent className="pt-6">
                     <div className="flex items-center gap-3 mb-4">
-                        <div className="p-2 rounded-lg bg-primary/10">
-                            <Target className="h-5 w-5 text-primary" />
+                        <div className="p-2 rounded-lg bg-brand/10">
+                            <Target className="h-5 w-5 text-brand" />
                         </div>
                         <div>
                             <p className="text-sm font-medium">Today&apos;s Progress</p>
@@ -59,7 +59,7 @@ export function TodaySummary() {
             <CardContent className="pt-6">
                 <div className="flex items-center gap-3 mb-4">
                     <div className="p-2 rounded-lg bg-primary/10">
-                        <Target className="h-5 w-5 text-primary" />
+                        <Target className="h-5 w-5 text-brand-color" />
                     </div>
                     <div>
                         <p className="text-sm font-medium">Today&apos;s Progress</p>

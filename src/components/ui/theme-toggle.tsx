@@ -23,7 +23,7 @@ export function ThemeToggle() {
             <button
                 onClick={() => setTheme('light')}
                 className={cn(
-                    'p-1.5 rounded-full transition-all duration-200',
+                    'p-1.5 rounded-full transition-all duration-200 cursor-pointer',
                     theme === 'light' ? 'bg-bg-surface text-brand-streak shadow-sm' : 'text-text-muted hover:text-text-primary'
                 )}
                 aria-label="Light mode"
@@ -33,7 +33,7 @@ export function ThemeToggle() {
             <button
                 onClick={() => setTheme('dark')}
                 className={cn(
-                    'p-1.5 rounded-full transition-all duration-200',
+                    'p-1.5 rounded-full transition-all duration-200 cursor-pointer',
                     theme === 'dark' ? 'bg-bg-surface text-brand-streak shadow-sm' : 'text-text-muted hover:text-text-primary'
                 )}
                 aria-label="Dark mode"
@@ -43,7 +43,7 @@ export function ThemeToggle() {
             <button
                 onClick={() => setTheme('system')}
                 className={cn(
-                    'p-1.5 rounded-full transition-all duration-200',
+                    'p-1.5 rounded-full transition-all duration-200 cursor-pointer',
                     theme === 'system' ? 'bg-bg-surface text-brand-streak shadow-sm' : 'text-text-muted hover:text-text-primary'
                 )}
                 aria-label="System theme"

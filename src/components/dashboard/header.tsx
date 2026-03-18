@@ -1,6 +1,6 @@
 'use client';
 
-import { Trophy, Bell } from 'lucide-react';
+import { Trophy, Bell, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserMenu } from '@/components/auth/user-menu';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
@@ -21,9 +21,18 @@ export function Header({ onExport }: HeaderProps) {
                 </div>
 
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-text-muted hover:text-text-primary rounded-full cursor-pointer"
+                    onClick={onExport}
+                    title="Print Dashboard"
+                >
+                    <Printer className="h-5 w-5 " />
+                </Button>
                 <ThemeToggle />
-                <Button variant="ghost" size="icon" className="text-text-muted hover:text-text-primary rounded-full hidden sm:flex">
+                <Button variant="ghost" size="icon" className="text-text-muted hover:text-text-primary rounded-full hidden sm:flex cursor-pointer">
                     <Bell className="h-5 w-5" />
                 </Button>
                 <div className="h-8 w-px bg-border/50 mx-1 hidden sm:block"></div>

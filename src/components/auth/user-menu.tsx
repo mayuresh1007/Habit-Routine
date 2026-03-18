@@ -21,9 +21,9 @@ export function UserMenu() {
 
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger className="focus:outline-none transition-colors ml-2">
-                <div className="flex items-center gap-2 px-1 py-1 rounded-full border-2 border-brand-color/80 hover:bg-muted/50 transition-colors">
-                    <div className="h-8 w-8 rounded-full bg-brand-color/20 flex items-center justify-center text-brand-color font-bold">
+            <DropdownMenuTrigger className="focus:outline-none transition-colors ml-2 cursor-pointer">
+                <div className="flex items-center gap-2 px-1 py-1 rounded-full border-2 border-brand/80 hover:bg-muted/50 transition-colors">
+                    <div className="h-8 w-8 rounded-full bg-brand/20 flex items-center justify-center text-brand font-bold">
                         {initial}
                     </div>
                     <svg
@@ -51,8 +51,8 @@ export function UserMenu() {
                         </p>
                     </div>
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator className="border-border/40" />
-                <div className="py-2">
+                {/* <DropdownMenuSeparator className="border-border/40" /> */}
+                {/* <div className="py-2">
                     <DropdownMenuItem className="cursor-pointer gap-3 px-3 py-2 text-text-muted hover:text-text-primary rounded-lg">
                         <UserIcon className="h-4 w-4" />
                         <span className="font-medium text-sm">Profile</span>
@@ -61,8 +61,8 @@ export function UserMenu() {
                         <Settings className="h-4 w-4" />
                         <span className="font-medium text-sm">Settings</span>
                     </DropdownMenuItem>
-                </div>
-                <DropdownMenuSeparator className="border-border/40" />
+                </div> */}
+                {/* <DropdownMenuSeparator className="border-border/40" /> */}
                 <div className="py-1">
                     <DropdownMenuItem
                         className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer gap-3 px-3 py-2 rounded-lg mt-1"

@@ -48,7 +48,10 @@ export default function Home() {
   // Next.js middleware handles unauthenticated redirects so we safely render dashboard here
   return (
     <>
-      <div className="min-h-screen bg-background print:hidden">
+      <div 
+         className="min-h-screen print:hidden bg-gradient-to-r bg-fixed"
+         style={{ backgroundImage: 'var(--bg-gradient)' }}
+      >
         <div className="max-w-5xl mx-auto px-4 sm:px-6 pb-12">
           <Header onExport={handlePrint} />
 
