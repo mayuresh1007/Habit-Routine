@@ -35,7 +35,7 @@ export const createHabitSchema = z.object({
         .trim(),
     emoji: z.string().min(1, 'Emoji is required'),
     frequency: z.enum(['daily', 'weekly'], {
-        errorMap: () => ({ message: 'Frequency must be daily or weekly' }),
+        message: 'Frequency must be daily or weekly',
     }),
 });
 
@@ -51,9 +51,7 @@ export const toggleDateSchema = z.object({
 
 export const createRoutineSchema = z.object({
     period: z.enum(['morning', 'afternoon', 'evening'], {
-        errorMap: () => ({
-            message: 'Period must be morning, afternoon, or evening',
-        }),
+        message: 'Period must be morning, afternoon, or evening',
     }),
     name: z
         .string()
@@ -74,9 +72,7 @@ export const updateRoutineSchema = z.object({
 
 export const reorderRoutineSchema = z.object({
     period: z.enum(['morning', 'afternoon', 'evening'], {
-        errorMap: () => ({
-            message: 'Period must be morning, afternoon, or evening',
-        }),
+        message: 'Period must be morning, afternoon, or evening',
     }),
     itemIds: z.array(z.string()).min(1, 'At least one item ID is required'),
 });

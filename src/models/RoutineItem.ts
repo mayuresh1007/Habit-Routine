@@ -60,7 +60,7 @@ routineItemSchema.index({ userId: 1, period: 1, sortOrder: 1 });
 
 // Transform for JSON responses
 routineItemSchema.set('toJSON', {
-    transform: (_doc, ret) => {
+    transform: (_doc: any, ret: any) => {
         ret.id = ret._id.toString();
         if (ret.completions instanceof Map) {
             ret.completions = Object.fromEntries(ret.completions);

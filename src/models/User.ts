@@ -38,8 +38,7 @@ const userSchema = new Schema<IUser>(
     }
 );
 
-// Index for faster lookups
-userSchema.index({ email: 1 });
+// Index for faster lookups - Removed redundant email index (unique: true handles this)
 
 // Pre-save hook: hash password before saving
 userSchema.pre('save', async function (next) {
@@ -63,7 +62,7 @@ userSchema.methods.comparePassword = async function (
 
 // Ensure we don't return passwordHash in JSON responses
 userSchema.set('toJSON', {
-    transform: (_doc, ret) => {
+    transform: (_doc: any, ret: any) => {
         delete ret.passwordHash;
         delete ret.__v;
         return ret;
