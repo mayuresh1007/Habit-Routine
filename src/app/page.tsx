@@ -53,7 +53,7 @@ export default function Home() {
           <Header onExport={handlePrint} />
 
           {/* Summary row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row sm:grid sm:grid-cols-2 gap-4 mb-6">
             <TodaySummary />
             <StreakDisplay />
           </div>

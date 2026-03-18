@@ -5,7 +5,7 @@ import { signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 
 export function RegisterForm() {
@@ -70,20 +70,20 @@ export function RegisterForm() {
     };
 
     return (
-        <Card className="w-full max-w-md mx-auto">
+        <Card className="w-full max-w-md mx-auto border-none shadow-xl shadow-brand-success/5 bg-bg-surface text-text-primary transition-colors duration-300">
             <CardHeader className="space-y-1 text-center">
                 <CardTitle className="text-2xl font-bold tracking-tight">
-                    Create an account
+                    Create an account ✨
                 </CardTitle>
-                <CardDescription>
-                    Enter your information to get started
+                <CardDescription className="text-text-muted">
+                    Enter your information to secure your first win
                 </CardDescription>
             </CardHeader>
             <form onSubmit={handleSubmit}>
-                <CardContent className="space-y-4">
+                <CardContent className="space-y-5 pb-8">
                     <div className="space-y-2">
-                        <label className="text-sm font-medium" htmlFor="name">
-                            Name
+                        <label className="text-sm font-medium flex items-center gap-2" htmlFor="name">
+                            👤 Name
                         </label>
                         <Input
                             id="name"
@@ -91,11 +91,12 @@ export function RegisterForm() {
                             placeholder="John Doe"
                             required
                             autoComplete="name"
+                            className="focus-visible:ring-brand-success transition-all duration-200 border-border/50 bg-bg-app text-text-primary"
                         />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-sm font-medium" htmlFor="email">
-                            Email
+                        <label className="text-sm font-medium flex items-center gap-2" htmlFor="email">
+                            📧 Email
                         </label>
                         <Input
                             id="email"
@@ -104,11 +105,12 @@ export function RegisterForm() {
                             placeholder="name@example.com"
                             required
                             autoComplete="email"
+                            className="focus-visible:ring-brand-success transition-all duration-200 border-border/50 bg-bg-app text-text-primary"
                         />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-sm font-medium" htmlFor="password">
-                            Password
+                        <label className="text-sm font-medium flex items-center gap-2" htmlFor="password">
+                            🔑 Password
                         </label>
                         <Input
                             id="password"
@@ -116,14 +118,15 @@ export function RegisterForm() {
                             type="password"
                             required
                             autoComplete="new-password"
+                            className="focus-visible:ring-brand-success transition-all duration-200 border-border/50 bg-bg-app text-text-primary"
                         />
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-text-muted">
                             Must be at least 8 characters containing a number and an uppercase letter.
                         </p>
                     </div>
                     <div className="space-y-2">
-                        <label className="text-sm font-medium" htmlFor="confirmPassword">
-                            Confirm Password
+                        <label className="text-sm font-medium flex items-center gap-2" htmlFor="confirmPassword">
+                            🛡️ Confirm Password
                         </label>
                         <Input
                             id="confirmPassword"
@@ -131,18 +134,19 @@ export function RegisterForm() {
                             type="password"
                             required
                             autoComplete="new-password"
+                            className="focus-visible:ring-brand-success transition-all duration-200 border-border/50 bg-bg-app text-text-primary"
                         />
                     </div>
                     {error && (
                         <div className="text-sm text-destructive text-center">{error}</div>
                     )}
+                    <div className="pt-2">
+                        <Button className="w-full bg-brand-success hover:bg-brand-success/90 text-white font-semibold transition-all shadow-md active:scale-95 h-11 text-base" type="submit" disabled={loading}>
+                            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Sign Up 🚀
+                        </Button>
+                    </div>
                 </CardContent>
-                <CardFooter>
-                    <Button className="w-full" type="submit" disabled={loading}>
-                        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Sign Up
-                    </Button>
-                </CardFooter>
             </form>
         </Card>
     );

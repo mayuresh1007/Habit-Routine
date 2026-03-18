@@ -99,14 +99,16 @@ export function RoutineBlock() {
                         return (
                             <div key={period}>
                                 {index > 0 && <Separator className="mb-4" />}
-                                <div className="flex items-center justify-between mb-2">
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
                                     <div className={`flex items-center gap-2 ${config.color}`}>
                                         {config.icon}
                                         <h3 className="text-sm font-semibold">{config.label}</h3>
                                     </div>
-                                    <RoutineForm
-                                        onSubmit={(name, time) => addItem({ period, name, timeEstimate: time })}
-                                    />
+                                    <div className="w-full sm:w-auto flex justify-end">
+                                        <RoutineForm
+                                            onSubmit={(name, time) => addItem({ period, name, timeEstimate: time })}
+                                        />
+                                    </div>
                                 </div>
 
                                 {periodItems.length === 0 ? (

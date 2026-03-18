@@ -51,12 +51,14 @@ export function HabitList() {
 
     return (
         <Card className="border-border/50">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4">
                 <CardTitle className="text-base font-semibold flex items-center gap-2">
                     <ListChecks className="h-4 w-4" />
                     Habits
                 </CardTitle>
-                <HabitForm onSubmit={(name, emoji, frequency) => addHabit({ name, emoji, frequency })} />
+                <div className="w-full sm:w-auto flex justify-end">
+                    <HabitForm onSubmit={(name, emoji, frequency) => addHabit({ name, emoji, frequency })} />
+                </div>
             </CardHeader>
             <CardContent>
                 {habits.length === 0 ? (
