@@ -32,9 +32,9 @@ export function Header({ onExport }: HeaderProps) {
                     <Printer className="h-5 w-5 " />
                 </Button>
                 <ThemeToggle />
-                <Button variant="ghost" size="icon" className="text-text-muted hover:text-text-primary rounded-full hidden sm:flex cursor-pointer">
+                {/* <Button variant="ghost" size="icon" className="text-text-muted hover:text-text-primary rounded-full hidden sm:flex cursor-pointer">
                     <Bell className="h-5 w-5" />
-                </Button>
+                </Button> */}
                 <div className="h-8 w-px bg-border/50 mx-1 hidden sm:block"></div>
                 <UserMenu />
             </div>
