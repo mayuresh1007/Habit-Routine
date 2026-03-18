@@ -1,24 +1,24 @@
 export interface Habit {
   id: string;
+  userId: string;
   name: string;
   emoji: string;
   frequency: 'daily' | 'weekly';
-  createdAt: string;
   completions: Record<string, boolean>; // date string "YYYY-MM-DD" → boolean
-}
-
-export interface RoutineItem {
-  id: string;
-  name: string;
-  timeEstimate: number | null; // minutes
-  order: number;
-}
-
-export interface RoutineBlock {
-  id: string;
-  period: 'morning' | 'afternoon' | 'evening';
-  items: RoutineItem[];
-  completions: Record<string, string[]>; // date string → array of completed item IDs
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export type RoutinePeriod = 'morning' | 'afternoon' | 'evening';
+
+export interface RoutineItem {
+  id: string;
+  userId: string;
+  period: RoutinePeriod;
+  name: string;
+  timeEstimate: number | null; // minutes
+  sortOrder: number;
+  completions: Record<string, boolean>; // date string "YYYY-MM-DD" → boolean
+  createdAt: string;
+  updatedAt?: string;
+}

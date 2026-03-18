@@ -1,0 +1,500 @@
+# VisionBoard Backend — Comprehensive Implementation Plan
+
+## Problem Statement
+
+The VisionBoard habit tracker currently stores all data in the browser's `localStorage` via Zustand's `persist` middleware. This means:
+
+- **Data loss** if the user clears browser storage or switches devices
+- **No multi-device sync** — habits on laptop aren't visible on phone
+- **No user accounts** — anyone accessing the URL sees the same (empty) state
+- **No data analytics** — impossible to build server-side insights or reports
+
+This plan adds a production-grade backend with authentication, persistent storage, and a test-driven approach.
+
+---
+
+## Tech Stack & Justification
+
+### Evaluated Alternatives
+
+Before arriving at the final stack, here's why certain alternatives were rejected:
+
+| Alternative | Rejected Because |
+|---|---|
+| **Separate Express.js server** | Adds deployment complexity, CORS handling, and a second hosting target. The Next.js app can host API routes natively, keeping everything in one deployment |
+| **Supabase / Firebase** | Vendor lock-in, less control over schema design, adds external dependency costs. For a personal/portfolio project, self-hosted MongoDB gives full control |
+| **Prisma (SQL)** | The `completions` field is a flexible date→boolean map that fits naturally in a document model. Prisma+SQL would need a separate `completions` table with joins, adding query complexity |
+| **tRPC** | Great for type safety, but adds significant learning curve and boilerplate. For a CRUD app with 12 endpoints, standard REST is simpler and more universally understood |
+| **Passport.js** | Heavy, plugin-based. NextAuth.js is purpose-built for Next.js and handles session/JWT/providers out of the box |
+
+### Chosen Stack
+
+| Layer | Technology | Version | Why |
+|---|---|---|---|
+| **API Layer** | Next.js App Router (Route Handlers) | 16.1.7 (already installed) | Zero additional infrastructure — API routes live alongside UI. Same deployment, same domain, no CORS. Supports middleware, edge runtime, and streaming |
+| **Database** | MongoDB Atlas (free tier) | 8.x | Document model naturally maps to our data shapes (`completions` as a nested object). Free tier gives 512MB — more than enough for habit tracking. No schema migrations needed |
+| **ODM** | Mongoose | 8.x | Schema validation at the application layer, built-in TypeScript support, middleware hooks for pre/post operations, population for relational references |
+| **Authentication** | NextAuth.js (Auth.js v5) | 5.x | First-class Next.js integration, built-in JWT + session management, supports credentials provider (email/password) and OAuth (GitHub, Google) for future expansion |
+| **Password Hashing** | bcryptjs | 2.x | Pure JS implementation (no native bindings), works everywhere including serverless. Resistant to timing attacks, configurable salt rounds |
+| **Validation** | Zod | 3.x | Already used by Shadcn/ui ecosystem, TypeScript-first schema validation, generates types from schemas, great error messages |
+| **Testing** | Jest + Supertest + mongodb-memory-server | 29.x / 7.x / 10.x | Industry standard for Node.js testing. `mongodb-memory-server` spins up an in-memory MongoDB for fast, isolated test runs — no external DB needed for CI |
+| **HTTP Client** | Native `fetch` | Built-in | Next.js 16 has enhanced `fetch` with caching/revalidation. No need for Axios — reduces bundle size |
+
+### Why NOT a Separate Express Server
+
+The previous conversation planned a separate `server/` Express project. Here's why we should use **Next.js Route Handlers** instead:
+
+```
+Express Approach (2 projects):          Next.js Route Handlers (1 project):
+┌──────────────┐  ┌──────────────┐     ┌──────────────────────────────┐
+│  Next.js UI  │──│  Express API │     │  Next.js UI + API Routes     │
+│  port 3000   │  │  port 5000   │     │  port 3000                   │
+│  Vercel/etc  │  │  Railway/etc │     │  Single Vercel deployment    │
+└──────────────┘  └──────────────┘     └──────────────────────────────┘
+   ❌ CORS config    ❌ 2 deployments      ✅ No CORS  ✅ 1 deployment
+   ❌ 2 package.json ❌ 2 CI pipelines     ✅ Shared types ✅ 1 pipeline
+```
+
+---
+
+## Database Schema Design
+
+### User Collection
+
+```typescript
+// Schema: users
+{
+  _id: ObjectId,
+  name: string,                    // display name
+  email: string,                   // unique, indexed, lowercase
+  passwordHash: string,            // bcrypt hash (12 rounds)
+  createdAt: Date,                 // auto-set
+  updatedAt: Date                  // auto-set
+}
+// Indexes: { email: 1 } (unique)
+```
+
+### Habit Collection
+
+```typescript
+// Schema: habits
+{
+  _id: ObjectId,
+  userId: ObjectId,                // ref → users, indexed
+  name: string,                    // e.g. "Drink water"
+  emoji: string,                   // e.g. "💧"
+  frequency: "daily" | "weekly",
+  completions: Map<string, boolean>, // "2026-03-17" → true
+  createdAt: Date,
+  updatedAt: Date
+}
+// Indexes: { userId: 1 }, { userId: 1, createdAt: -1 }
+```
+
+### RoutineItem Collection
+
+```typescript
+// Schema: routine_items
+{
+  _id: ObjectId,
+  userId: ObjectId,                // ref → users, indexed
+  period: "morning" | "afternoon" | "evening",
+  name: string,
+  timeEstimate: number | null,     // minutes
+  sortOrder: number,
+  completions: Map<string, boolean>, // "2026-03-17" → true
+  createdAt: Date,
+  updatedAt: Date
+}
+// Indexes: { userId: 1, period: 1, sortOrder: 1 }
+```
+
+### Why This Schema Design
+
+1. **`completions` as a Map** — Matches the existing frontend `Record<string, boolean>` exactly. No transformation needed when sending data to the client. MongoDB handles sparse maps efficiently
+2. **`userId` on every document** — Enables simple `find({ userId })` queries with index coverage. No expensive joins
+3. **`sortOrder` on RoutineItem** — Enables drag-and-drop reorder without rewriting all documents (just swap `sortOrder` values)
+
+---
+
+## Project Structure
+
+```
+d:\projects in 2026\visionboard\
+├── src/
+│   ├── app/
+│   │   ├── api/                        # NEW — All API routes
+│   │   │   ├── auth/
+│   │   │   │   ├── register/
+│   │   │   │   │   └── route.ts        # POST /api/auth/register
+│   │   │   │   ├── login/
+│   │   │   │   │   └── route.ts        # POST /api/auth/login
+│   │   │   │   └── me/
+│   │   │   │       └── route.ts        # GET /api/auth/me
+│   │   │   ├── habits/
+│   │   │   │   ├── route.ts            # GET, POST /api/habits
+│   │   │   │   └── [id]/
+│   │   │   │       ├── route.ts        # PUT, DELETE /api/habits/:id
+│   │   │   │       └── toggle/
+│   │   │   │           └── route.ts    # PATCH /api/habits/:id/toggle
+│   │   │   └── routines/
+│   │   │       ├── route.ts            # GET, POST /api/routines
+│   │   │       ├── [id]/
+│   │   │       │   ├── route.ts        # PUT, DELETE /api/routines/:id
+│   │   │       │   └── toggle/
+│   │   │       │       └── route.ts    # PATCH /api/routines/:id/toggle
+│   │   │       └── reorder/
+│   │   │           └── route.ts        # PATCH /api/routines/reorder
+│   │   ├── login/
+│   │   │   └── page.tsx                # NEW — Login page
+│   │   ├── register/
+│   │   │   └── page.tsx                # NEW — Register page
+│   │   ├── layout.tsx                  # MODIFIED — Add auth provider
+│   │   ├── page.tsx                    # MODIFIED — Add auth guard
+│   │   └── globals.css
+│   ├── components/
+│   │   ├── auth/                       # NEW
+│   │   │   ├── login-form.tsx
+│   │   │   ├── register-form.tsx
+│   │   │   └── user-menu.tsx           # Dropdown with logout
+│   │   ├── dashboard/
+│   │   ├── habits/
+│   │   ├── routines/
+│   │   ├── export/
+│   │   └── ui/
+│   ├── lib/
+│   │   ├── db.ts                       # NEW — MongoDB connection singleton
+│   │   ├── auth.ts                     # NEW — NextAuth config
+│   │   ├── api-client.ts               # NEW — Typed fetch wrapper
+│   │   ├── validations.ts              # NEW — Zod schemas
+│   │   ├── use-hydration.ts
+│   │   └── utils.ts
+│   ├── models/                         # NEW — Mongoose models
+│   │   ├── User.ts
+│   │   ├── Habit.ts
+│   │   └── RoutineItem.ts
+│   ├── middleware.ts                   # NEW — Auth middleware (route protection)
+│   ├── store/
+│   │   ├── habit-store.ts              # MODIFIED — API calls + optimistic updates
+│   │   └── routine-store.ts            # MODIFIED — API calls + optimistic updates
+│   └── types/
+│       └── index.ts                    # MODIFIED — Add user types, API response types
+├── __tests__/                          # NEW — Test suite
+│   ├── setup.ts                        # Jest global setup (memory MongoDB)
+│   ├── helpers.ts                      # Test utilities (create user, get token)
+│   ├── api/
+│   │   ├── auth.test.ts
+│   │   ├── habits.test.ts
+│   │   └── routines.test.ts
+│   └── models/
+│       ├── User.test.ts
+│       ├── Habit.test.ts
+│       └── RoutineItem.test.ts
+├── .env.local                          # NEW — Environment variables
+├── .env.example                        # NEW — Template for env vars
+├── jest.config.ts                      # NEW — Jest configuration
+├── package.json                        # MODIFIED — Add new deps
+└── tsconfig.json
+```
+
+---
+
+## API Specification
+
+### Authentication
+
+| Method | Endpoint | Body | Response | Auth |
+|---|---|---|---|---|
+| `POST` | `/api/auth/register` | `{ name, email, password }` | `{ user, token }` | No |
+| `POST` | `/api/auth/login` | `{ email, password }` | `{ user, token }` | No |
+| `GET` | `/api/auth/me` | — | `{ user }` | Yes |
+
+### Habits
+
+| Method | Endpoint | Body | Response | Auth |
+|---|---|---|---|---|
+| `GET` | `/api/habits` | — | `{ habits: Habit[] }` | Yes |
+| `POST` | `/api/habits` | `{ name, emoji, frequency }` | `{ habit: Habit }` | Yes |
+| `PUT` | `/api/habits/:id` | `{ name, emoji, frequency }` | `{ habit: Habit }` | Yes |
+| `DELETE` | `/api/habits/:id` | — | `{ success: true }` | Yes |
+| `PATCH` | `/api/habits/:id/toggle` | `{ date: "YYYY-MM-DD" }` | `{ habit: Habit }` | Yes |
+
+### Routines
+
+| Method | Endpoint | Body | Response | Auth |
+|---|---|---|---|---|
+| `GET` | `/api/routines` | — | `{ routines: RoutineItem[] }` | Yes |
+| `POST` | `/api/routines` | `{ period, name, timeEstimate }` | `{ routine: RoutineItem }` | Yes |
+| `PUT` | `/api/routines/:id` | `{ name, timeEstimate }` | `{ routine: RoutineItem }` | Yes |
+| `DELETE` | `/api/routines/:id` | — | `{ success: true }` | Yes |
+| `PATCH` | `/api/routines/:id/toggle` | `{ date: "YYYY-MM-DD" }` | `{ routine: RoutineItem }` | Yes |
+| `PATCH` | `/api/routines/reorder` | `{ period, itemIds: string[] }` | `{ routines: RoutineItem[] }` | Yes |
+
+### Error Response Format (Consistent)
+
+```typescript
+{
+  error: string,       // Machine-readable code: "VALIDATION_ERROR", "NOT_FOUND", etc.
+  message: string,     // Human-readable message
+  details?: ZodError[] // Validation field errors (only for validation failures)
+}
+```
+
+### HTTP Status Codes
+
+| Code | Meaning |
+|---|---|
+| `200` | Success |
+| `201` | Created |
+| `400` | Validation error / Bad request |
+| `401` | Not authenticated |
+| `403` | Not authorized (trying to access another user's data) |
+| `404` | Resource not found |
+| `409` | Conflict (duplicate email on register) |
+| `500` | Internal server error |
+
+---
+
+## Proposed Changes (Ordered by Dependency)
+
+### Phase 1: Infrastructure
+
+#### [NEW] `.env.local`
+- `MONGODB_URI` — Connection string to MongoDB Atlas
+- `NEXTAUTH_SECRET` — Random 32-char secret for JWT signing
+- `NEXTAUTH_URL` — Base URL (http://localhost:3000 for dev)
+
+#### [NEW] `.env.example`
+- Template file with placeholder values for all env vars
+
+#### [NEW] [db.ts](file:///d:/projects%20in%202026/visionboard/src/lib/db.ts)
+- Mongoose connection singleton with connection caching (critical for serverless where each request may re-initialize)
+- Handles reconnection and error logging
+
+---
+
+### Phase 2: Models (Test-Driven)
+
+#### [NEW] [User.ts](file:///d:/projects%20in%202026/visionboard/src/models/User.ts)
+- Mongoose schema with email validation, unique constraint, password hash
+- Instance method: `comparePassword(candidate)` using bcryptjs
+- Pre-save hook: auto-hash password on create/change
+
+#### [NEW] [Habit.ts](file:///d:/projects%20in%202026/visionboard/src/models/Habit.ts)
+- Schema matching existing [Habit](file:///d:/projects%20in%202026/visionboard/src/types/index.ts#1-9) TypeScript interface
+- `userId` as required ObjectId ref
+- `completions` as Mongoose `Map` type
+
+#### [NEW] [RoutineItem.ts](file:///d:/projects%20in%202026/visionboard/src/models/RoutineItem.ts)
+- Schema matching existing [RoutineItem](file:///d:/projects%20in%202026/visionboard/src/types/index.ts#10-16) + [RoutineBlock](file:///d:/projects%20in%202026/visionboard/src/types/index.ts#17-23) interfaces
+- Includes `period`, `sortOrder`, and `completions` map
+
+#### [NEW] [User.test.ts](file:///d:/projects%20in%202026/visionboard/__tests__/models/User.test.ts)
+- Tests: create user, email uniqueness, password hashing, comparePassword
+
+#### [NEW] [Habit.test.ts](file:///d:/projects%20in%202026/visionboard/__tests__/models/Habit.test.ts)
+- Tests: create habit, required fields validation, completions map operations
+
+#### [NEW] [RoutineItem.test.ts](file:///d:/projects%20in%202026/visionboard/__tests__/models/RoutineItem.test.ts)
+- Tests: create routine item, period enum validation, sort order
+
+---
+
+### Phase 3: Validation Schemas
+
+#### [NEW] [validations.ts](file:///d:/projects%20in%202026/visionboard/src/lib/validations.ts)
+- Zod schemas for every API request body:
+  - `registerSchema`: name (2-50 chars), email (valid format), password (8+ chars, 1 uppercase, 1 number)
+  - `loginSchema`: email, password
+  - `habitSchema`: name (1-100 chars), emoji (1 char), frequency (daily|weekly)
+  - `toggleSchema`: date (YYYY-MM-DD format validation)
+  - `routineSchema`: period (morning|afternoon|evening), name, timeEstimate (positive number or null)
+  - `reorderSchema`: period, itemIds (array of valid ObjectId strings)
+
+---
+
+### Phase 4: Auth API Routes
+
+#### [NEW] [auth.ts](file:///d:/projects%20in%202026/visionboard/src/lib/auth.ts)
+- NextAuth configuration with CredentialsProvider
+- JWT strategy with `userId` in the token payload
+- Session callback to expose `userId` to the client
+
+#### [NEW] [middleware.ts](file:///d:/projects%20in%202026/visionboard/src/middleware.ts)
+- Next.js middleware that protects `/api/habits/*`, `/api/routines/*`
+- Redirects unauthenticated users to `/login`
+- Allows `/api/auth/*`, `/login`, `/register` through
+
+#### [NEW] Register route — `src/app/api/auth/register/route.ts`
+- Validates with Zod, checks duplicate email, hashes password, creates user, returns JWT
+
+#### [NEW] Login route — `src/app/api/auth/login/route.ts`
+- Validates credentials, compares password hash, returns JWT
+
+#### [NEW] Me route — `src/app/api/auth/me/route.ts`
+- Returns current user profile from JWT
+
+#### [NEW] [auth.test.ts](file:///d:/projects%20in%202026/visionboard/__tests__/api/auth.test.ts)
+- Tests: register success, duplicate email 409, weak password 400, login success, wrong password 401, /me with valid token, /me without token 401
+
+---
+
+### Phase 5: Habits API Routes
+
+#### [NEW] `src/app/api/habits/route.ts` (GET + POST)
+- `GET`: Fetch all habits for the authenticated user, sorted by `createdAt` desc
+- `POST`: Validate with Zod, create habit with `userId` from JWT
+
+#### [NEW] `src/app/api/habits/[id]/route.ts` (PUT + DELETE)
+- `PUT`: Validate ownership (`userId` match), update name/emoji/frequency
+- `DELETE`: Validate ownership, delete habit
+
+#### [NEW] `src/app/api/habits/[id]/toggle/route.ts` (PATCH)
+- Toggle a specific date's completion status
+- If date exists in completions map → remove it; if not → add `true`
+
+#### [NEW] [habits.test.ts](file:///d:/projects%20in%202026/visionboard/__tests__/api/habits.test.ts)
+- Tests: create habit, list habits (only own), update habit, delete habit, toggle completion on/off, auth required for all, can't access another user's habits
+
+---
+
+### Phase 6: Routines API Routes
+
+#### [NEW] `src/app/api/routines/route.ts` (GET + POST)
+- `GET`: Fetch all routine items for user, grouped by period, sorted by `sortOrder`
+- `POST`: Create routine item with auto-calculated `sortOrder`
+
+#### [NEW] `src/app/api/routines/[id]/route.ts` (PUT + DELETE)
+- `PUT`: Update name and/or timeEstimate
+- `DELETE`: Delete and re-index `sortOrder` for remaining items
+
+#### [NEW] `src/app/api/routines/[id]/toggle/route.ts` (PATCH)
+- Toggle date completion (same logic as habits)
+
+#### [NEW] `src/app/api/routines/reorder/route.ts` (PATCH)
+- Accepts ordered array of item IDs, updates `sortOrder` for each
+
+#### [NEW] [routines.test.ts](file:///d:/projects%20in%202026/visionboard/__tests__/api/routines.test.ts)
+- Tests: create routine item, list by period, update, delete + re-index, toggle, reorder, auth required, ownership isolation
+
+---
+
+### Phase 7: Frontend Integration
+
+#### [NEW] [api-client.ts](file:///d:/projects%20in%202026/visionboard/src/lib/api-client.ts)
+- Typed fetch wrapper with automatic token injection from NextAuth session
+- Error handling with typed error responses
+- Methods: `get<T>()`, `post<T>()`, `put<T>()`, `patch<T>()`, `delete<T>()`
+
+#### [MODIFY] [habit-store.ts](file:///d:/projects%20in%202026/visionboard/src/store/habit-store.ts)
+- Replace localStorage persistence with API calls
+- Implement **optimistic updates**: update Zustand state immediately, then sync with server
+- On error: rollback to previous state and show toast message
+- Add `loadHabits()` action to fetch from API on mount
+- Remove `persist` middleware (server is now the source of truth)
+
+#### [MODIFY] [routine-store.ts](file:///d:/projects%20in%202026/visionboard/src/store/routine-store.ts)
+- Same pattern as habit-store: optimistic updates + API calls
+- Transform API response (flat list) into the `Record<RoutinePeriod, RoutineItem[]>` structure the UI expects
+
+#### [MODIFY] [index.ts](file:///d:/projects%20in%202026/visionboard/src/types/index.ts)
+- Add `User` type, `ApiResponse<T>` wrapper type, `ApiError` type
+- Update [Habit](file:///d:/projects%20in%202026/visionboard/src/types/index.ts#1-9) and [RoutineItem](file:///d:/projects%20in%202026/visionboard/src/types/index.ts#10-16) to use `_id` from MongoDB (with client alias to [id](file:///d:/projects%20in%202026/visionboard/src/components/habits/habit-grid.tsx#7-80))
+
+#### [MODIFY] [layout.tsx](file:///d:/projects%20in%202026/visionboard/src/app/layout.tsx)
+- Wrap app in NextAuth `SessionProvider`
+
+#### [MODIFY] [page.tsx](file:///d:/projects%20in%202026/visionboard/src/app/page.tsx)
+- Add auth check: redirect to `/login` if not authenticated
+- Call `loadHabits()` and `loadRoutines()` on mount
+
+#### [MODIFY] [header.tsx](file:///d:/projects%20in%202026/visionboard/src/components/dashboard/header.tsx)
+- Add user menu (avatar + name + logout button) using `UserMenu` component
+
+---
+
+### Phase 8: Auth UI
+
+#### [NEW] [login-form.tsx](file:///d:/projects%20in%202026/visionboard/src/components/auth/login-form.tsx)
+- Email + password form using existing Shadcn `Input`, `Button`, `Card` components
+- Client-side validation with Zod
+- Calls NextAuth `signIn("credentials")`
+
+#### [NEW] [register-form.tsx](file:///d:/projects%20in%202026/visionboard/src/components/auth/register-form.tsx)
+- Name + email + password + confirm password form
+- Calls `/api/auth/register` then auto-signs in
+
+#### [NEW] [user-menu.tsx](file:///d:/projects%20in%202026/visionboard/src/components/auth/user-menu.tsx)
+- Dropdown with user name/email and logout button
+- Uses existing Shadcn `DropdownMenu` component
+
+#### [NEW] Login page — `src/app/login/page.tsx`
+- Full-page login with `LoginForm` + link to register
+
+#### [NEW] Register page — `src/app/register/page.tsx`
+- Full-page register with `RegisterForm` + link to login
+
+---
+
+## User Review Required
+
+> [!IMPORTANT]
+> **MongoDB Atlas Setup Required**: You'll need a MongoDB Atlas account (free tier is sufficient). I'll create a `.env.example` with the required variables, but you'll need to provide the actual `MONGODB_URI` connection string.
+
+> [!WARNING]
+> **Breaking Change — localStorage Migration**: Once the backend is integrated, existing localStorage data will be orphaned. Users will need to re-create their habits/routines after registering. If you want a migration tool, let me know and I'll add a "one-click import from localStorage" feature to the plan.
+
+> [!IMPORTANT]
+> **Authentication Provider Choice**: The plan uses email/password (Credentials Provider). Would you also like OAuth providers (Google, GitHub) for social login? This is easy to add with NextAuth but changes the registration flow.
+
+---
+
+## Verification Plan
+
+### Automated Tests
+
+Tests use `mongodb-memory-server` — no external database needed.
+
+**Command to run all tests:**
+```bash
+cd "d:\projects in 2026\visionboard"
+npm test
+```
+
+**Command to run tests with coverage:**
+```bash
+npm test -- --coverage
+```
+
+**Test breakdown:**
+
+| Test File | What It Covers | ~Test Count |
+|---|---|---|
+| `models/User.test.ts` | Schema validation, password hashing, duplicate email | 5 |
+| `models/Habit.test.ts` | Schema validation, required fields, completions map | 4 |
+| `models/RoutineItem.test.ts` | Schema validation, period enum, sort order | 4 |
+| `api/auth.test.ts` | Register, login, /me, error cases | 7 |
+| `api/habits.test.ts` | CRUD, toggle, ownership checks, auth | 8 |
+| `api/routines.test.ts` | CRUD, toggle, reorder, ownership, auth | 9 |
+| **Total** | | **~37 tests** |
+
+### Manual Verification (Browser Testing)
+
+After implementation, test these end-to-end flows in the browser:
+
+1. **Register** — Go to `/register`, create account, verify redirect to dashboard
+2. **Login** — Go to `/login`, sign in, verify dashboard loads with user data
+3. **Create Habit** — Click "Add Habit", fill form, verify it persists after page refresh
+4. **Toggle Habit** — Check/uncheck a day, refresh page, verify state persists
+5. **Create Routine** — Add items to morning/afternoon/evening, verify persistence
+6. **Cross-device** — Open in incognito, log in with same account, verify data is there
+7. **Logout** — Click user menu → logout, verify redirect to login
+8. **Auth Guard** — Try accessing `/` without login, verify redirect to `/login`
+
+### Build Verification
+
+```bash
+cd "d:\projects in 2026\visionboard"
+npm run build
+```
+This will catch any TypeScript errors and ensure API routes compile correctly.

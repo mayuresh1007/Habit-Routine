@@ -25,7 +25,7 @@ import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 export function HabitList() {
     const habits = useHabitStore((s) => s.habits);
     const addHabit = useHabitStore((s) => s.addHabit);
-    const moveHabit = useHabitStore((s) => s.moveHabit);
+    const reorderHabits = useHabitStore((s) => s.reorderHabits);
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -40,10 +40,13 @@ export function HabitList() {
             const oldIndex = habits.findIndex((h) => h.id === active.id);
             const newIndex = habits.findIndex((h) => h.id === over.id);
             if (oldIndex !== -1 && newIndex !== -1) {
-                moveHabit(oldIndex, newIndex);
+                const newHabits = Array.from(habits);
+                const [movedHabit] = newHabits.splice(oldIndex, 1);
+                newHabits.splice(newIndex, 0, movedHabit);
+                reorderHabits(newHabits);
             }
         },
-        [habits, moveHabit]
+        [habits, reorderHabits]
     );
 
     return (
@@ -53,7 +56,7 @@ export function HabitList() {
                     <ListChecks className="h-4 w-4" />
                     Habits
                 </CardTitle>
-                <HabitForm onSubmit={addHabit} />
+                <HabitForm onSubmit={(name, emoji, frequency) => addHabit({ name, emoji, frequency })} />
             </CardHeader>
             <CardContent>
                 {habits.length === 0 ? (
