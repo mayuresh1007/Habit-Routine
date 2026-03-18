@@ -7,9 +7,10 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 import Image from 'next/image';
 interface HeaderProps {
     onExport: () => void;
+    showExport?: boolean;
 }
 
-export function Header({ onExport }: HeaderProps) {
+export function Header({ onExport, showExport = true }: HeaderProps) {
     return (
         <header className="flex items-center justify-between py-4 print:hidden border-b border-border/40 mb-6 pb-4">
             <div className="flex items-center gap-3">
@@ -22,15 +23,17 @@ export function Header({ onExport }: HeaderProps) {
 
             </div>
             <div className="flex items-center gap-2 sm:gap-4">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="text-text-muted hover:text-text-primary rounded-full cursor-pointer"
-                    onClick={onExport}
-                    title="Print Dashboard"
-                >
-                    <Printer className="h-5 w-5 " />
-                </Button>
+                {showExport && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-text-muted hover:text-text-primary rounded-full cursor-pointer"
+                        onClick={onExport}
+                        title="Print Dashboard"
+                    >
+                        <Printer className="h-5 w-5 " />
+                    </Button>
+                )}
                 <ThemeToggle />
                 {/* <Button variant="ghost" size="icon" className="text-text-muted hover:text-text-primary rounded-full hidden sm:flex cursor-pointer">
                     <Bell className="h-5 w-5" />

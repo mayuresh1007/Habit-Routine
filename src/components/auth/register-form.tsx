@@ -80,7 +80,7 @@ export function RegisterForm() {
                 </CardDescription>
             </CardHeader>
             <form onSubmit={handleSubmit}>
-                <CardContent className="space-y-5 pb-8">
+                <CardContent className="space-y-5 pb-4">
                     <div className="space-y-2">
                         <label className="text-sm font-medium flex items-center gap-2" htmlFor="name">
                             👤 Name
